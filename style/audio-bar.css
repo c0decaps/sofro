@@ -1,0 +1,12 @@
+.audio-bar ul {
+  height: 50px;
+  list-style-type: none;
+  background: rgba(4, 4, 4, 0.7);
+  font-family: monospace;
+  color: white;
+  font-size: 0.75em;
+  overflow: hidden;
+  bottom: 0;
+  position: fixed;
+  width: 100%;
+}
