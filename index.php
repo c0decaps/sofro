@@ -7,16 +7,16 @@ $db = new PDO('sqlite:data/rad10.db');
 $statement = $db->query("SELECT * FROM stations");
 $stations = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-$debug = true;
+$device_id = 0;
+$debug = false;
 if(isset($_GET['cmd'])) {
   $cmd = $_GET['cmd'];
   if($cmd == "play") {        // PLAY
-    if($debug === true) {
+    if($debug == true) {
       echo "playing...<br>";
     }
     shell_exec("python3 ./controller.py play");
-  } elseif($cmd == "edit") {  // EDIT
-
+    $db->exec("UPDATE playing SET currently_playing=true WHERE device_id=".$device_id);
   } elseif($cmd == "del") {   // DELETE
       if(isset($_GET["id"])) {
         echo "executing query ".$query."...<br>";
@@ -24,10 +24,11 @@ if(isset($_GET['cmd'])) {
         $db->exec($query);
       }
   } elseif($cmd == "stop") {  // STOP
-    if($debug === true) {
+    if($debug == true) {
       echo "stopping...";
     }
     shell_exec("python3 ./controller.py stop");
+    $db->exec("UPDATE playing SET currently_playing=false WHERE device_id=".$device_id);
   } elseif($cmd == "add") {   // ADD
     if(isset($_GET["name"]) && isset($_GET["url"])) {
       if($debug == true) {
@@ -53,26 +54,27 @@ if(isset($_GET['cmd'])) {
       }
     }
   } elseif($cmd == "stream") {  // PLAY FROM URL
-    if(isset($_GET['link'])){
-      $url = $_GET['link'];
+    echo "stream from url";
+    if(isset($_GET['station'])){
+      $station_id = $_GET['station'];
+      $stream_url_statement = $db->query("SELECT url FROM stations WHERE id=".$station_id);
+      $stream_url = $stream_url_statement->fetchAll(PDO::FETCH_ASSOC);
+      $url = $stream_url[0]["url"];
       if($debug === true) {
-        echo "received command to play ".$url."... ";
-      }
-      if(filter_var($url, FILTER_VALIDATE_URL)) {
-        if($debug === true) {
-          echo "valid url, trying to play ";
-          echo shell_exec("python3 ./controller.py url ".$url);
-        } else {
-          shell_exec("python3 ./controller.py url ".$url);
-        }
+        echo "received command to play station ".$station_id."... <br>";
+        echo "so the url that is to play is: ".$url." <br>";
+        echo shell_exec("python3 ./controller.py url ".$url);
       } else {
-        echo "invalid url";
+        shell_exec("python3 ./controller.py url ".$url);
       }
+      $db->exec("UPDATE playing SET currently_playing=true WHERE device_id=".$device_id);
     } else {
       echo "no url";
     }
   }
-  header('Location: http://'.$_SERVER['HTTP_HOST'].'/');
+  if($debug == false) {
+    header('Location: http://'.$_SERVER['HTTP_HOST'].'/');
+  }
 }
 ?>
 
@@ -132,22 +134,12 @@ if(isset($_GET['cmd'])) {
         echo "        <input type=\"hidden\" name=\"id\" value=\"".$station_id."\" />";
         echo "        <input type=\"submit\" value=\"\" class=\"submit-option delete\" />";
         echo "      </form></div>";
-        echo "        <a href=\"?cmd=stream&link=".$stations[$station_id]['url']."\"><p>";
+        echo "        <a href=\"?cmd=stream&station=".$station_id."\"><p>";
         echo            $stations[$station_id]['name'];
         echo "        </p></a>";
         echo "  </div>";
     }
   ?>
-  <div class="grid-item">
-    <a href="?cmd=stop">
-      <p>Stop</p>
-    </a>
-  </div>
-  <div class="grid-item">
-    <a href="?cmd=play">
-      <p>Play</p>
-    </a>
-  </div>
   <div class="grid-item add" onclick="openForm()">
     <p>+</p>
   </div>
@@ -174,11 +166,25 @@ if(isset($_GET['cmd'])) {
 </div>
 
 <div class="audio-bar">
-  <ul>
-    <li class="stop"><a href="?cmd=stop"><div class="stop"></div></a></li>
-    <li><a href="?cmd=play"><div class="play"></div></a></li>
-  </ul>
-  </div>
+  <center>
+    <div class="toggle-play">
+      <?php
+        $play_status = $db->query("select currently_playing from playing where device_id=".$device_id);
+        $play_status = $play_status->fetchAll(PDO::FETCH_ASSOC);
+        $play_status = $play_status[0]["currently_playing"];
+        if($play_status == "0") {
+          echo "<a href=\"?cmd=play\" class=\"play-button\">";
+        } elseif($play_status == "1") {
+          echo "<a href=\"?cmd=stop\" class=\"stop-button\">";
+        }
+      ?>
+      <div class="toggle-play">
+      </div>
+    </a>
+    </div>
+  </center>
+  <div class="volume"></div>
+</div>
 
 </body>
 </html>
