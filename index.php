@@ -9,6 +9,9 @@ $stations = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 $device_id = 0;
 $debug = false;
+if(isset($_GET['debug'])) {
+  $debug = $_GET['debug'];
+}
 if(isset($_GET['cmd'])) {
   $cmd = $_GET['cmd'];
   if($cmd == "play") {        // PLAY
@@ -60,7 +63,7 @@ if(isset($_GET['cmd'])) {
       $stream_url_statement = $db->query("SELECT url FROM stations WHERE id=".$station_id);
       $stream_url = $stream_url_statement->fetchAll(PDO::FETCH_ASSOC);
       $url = $stream_url[0]["url"];
-      if($debug === true) {
+      if($debug == true) {
         echo "received command to play station ".$station_id."... <br>";
         echo "so the url that is to play is: ".$url." <br>";
         echo shell_exec("python3 ./controller.py url ".$url);
@@ -71,9 +74,15 @@ if(isset($_GET['cmd'])) {
     } else {
       echo "no url";
     }
+  } elseif($cmd == "vol" && isset($_GET["volume"])) { // VOLUME
+    if($debug == true) {
+      echo "changing volume to ".$_GET["volume"]."...<br>";
+    }
+    shell_exec("python3 ./controller.py vol ".$_GET["volume"]);
+    $db->exec("update devices set volume=".$_GET["volume"]." where id=".$device_id);
   }
   if($debug == false) {
-    header('Location: http://'.$_SERVER['HTTP_HOST'].'/');
+    header('Location: http://'.$_SERVER['HTTP_HOST'].'/test.php');
   }
 }
 ?>
@@ -183,7 +192,22 @@ if(isset($_GET['cmd'])) {
     </a>
     </div>
   </center>
-  <div class="volume"></div>
+  <div class="volume">
+    <center>
+    <div class="icon"></div>
+    <div class="vol-slider">
+      <form action="">
+        <input type="hidden" name="cmd" value="vol" />
+        <?php
+          $vol = $db->query("select volume from devices where id=".$device_id);
+          $vol = $vol->fetchAll(PDO::FETCH_ASSOC);
+          $vol = $vol[0]["volume"];
+          echo "<input name=\"volume\" type=\"range\" min=\"0\" max=\"100\" value=\"".$vol."\" class=\"vol-slider\" onchange=\"this.form.submit()\" />";
+        ?>
+      </form>
+    </div>
+  </center>
+  </div>
 </div>
 
 </body>

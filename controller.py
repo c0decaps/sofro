@@ -24,6 +24,16 @@ try:
             url = sys.argv[2]
             print("playing from url "+str(url))
             sonos.play_uri(url)
+        elif(sys.argv[1].lower() == 'vol' and len(sys.argv) > 2):
+            new_vol = int(sys.argv[2])
+            if(isinstance(new_vol, int)):
+                new_vol = int(new_vol)
+                if(new_vol in range(0, 101)):
+                    sonos.volume = new_vol
+                else:
+                    print("volume out of range (0...100)")
+            else:
+                print("volume is no integer")
         else:
             print("invalid command")
 except sqlite3.Error as error:
