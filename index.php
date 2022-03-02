@@ -82,7 +82,7 @@ if(isset($_GET['cmd'])) {
     $db->exec("update devices set volume=".$_GET["volume"]." where id=".$device_id);
   }
   if($debug == false) {
-    header('Location: http://'.$_SERVER['HTTP_HOST'].'/test.php');
+    header('Location: http://'.$_SERVER['HTTP_HOST']);
   }
 }
 ?>
